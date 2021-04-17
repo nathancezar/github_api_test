@@ -1,6 +1,5 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-import requests
 
 from api import models, serializers
 from api.integrations.github import GithubApi
@@ -17,47 +16,48 @@ class OrganizationViewSet(viewsets.ModelViewSet):
     queryset = models.Organization.objects.all()
     serializer_class = serializers.OrganizationSerializer
     lookup_field = "login"
-    base_url = "https://api.github.com/orgs/"
 
     def retrieve(self, request, login=None):
+        # GET sem o login deve retornar todas as organizações
+        # ordenadas pelo score
         if request.method == 'GET' and not login:
             return Response(self.serializer_class(self.queryset).data, \
                 status=status.HTTP_200_OK)
 
+        # GET com o login deve retornar as informações da organização,
+        # caso exista, e salvar no banco de dados.
+        # Caso já exista no banco, atualiza os dados.
         elif request.method == 'GET' and login:
             try:
-                public_members_value = self.getPublicMembers(login)
-                public_repos_value, name = self.getPublicRepositories(login)
+                new_org = self.create_or_update_organization(login)
             except:
                 return Response(status=status.HTTP_404_NOT_FOUND)
-
-            priority = public_members_value + public_repos_value
-            new_org, _ = models.Organization.objects.update_or_create(
-                    login=login, name=name, score=priority)
 
             return Response(self.serializer_class(new_org).data, \
                 status=status.HTTP_200_OK)
 
-        elif request.method == 'DELETE':
+        # DELETE com login deve remover a organização do banco de dados
+        elif request.method == 'DELETE' and login:
             try:
                 self.serializer_class(self.queryset.get(login=login)).delete()
-
             except:
                 return Response(status=status.HTTP_404_NOT_FOUND)
 
             return Response(status=status.HTTP_200_OK)
 
-    def getPublicMembers(self, login):
-        public_members_response = requests.get(
-            f"{self.base_url}{login}/public_members")
-        public_members_response.raise_for_status()
+        # DELETE sem login deve gerar erro
+        elif request.method == 'DELETE' and not login:
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
-        return len(public_members_response.json())
+    def create_or_update_organization(self, login: str):
+        """Retorna um QuerySet da nova organização cadastrada
 
-    def getPublicRepositories(self, login):
-        public_repos_response = requests.get(
-            f"{self.base_url}{login}")
-        public_repos_response.raise_for_status()
+        :login: login da organização no Github
+        """
+        public_members = GithubApi().get_organization_public_members(login)
+        organization = GithubApi().get_organization(login)
+        priority = public_members + organization['repositories']
+        new_org, _ = models.Organization.objects.update_or_create(
+            login=login, name=organization['name'], score=priority)
 
-        return public_repos_response.json()["public_repos"], \
-                public_repos_response.json()["name"]
+        return new_org
