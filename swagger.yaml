@@ -1,0 +1,74 @@
+swagger: '2.0' 
+schemes: 
+  - http
+  - https
+  
+host: teste-vough-api.herokuapp.com
+basePath: /api/orgs
+
+info:
+  version: 1.0.0
+  title: teste_vough_api
+  description: Teste Técnico Desenvolvedor(a) Python Júnior. Utiliza API do
+    GitHub para buscar a quantidade de repositórios públicos e membros públicos
+    de uma organização. Calcula os score da organização. Salva os dados no Banco
+    de Dados e Deleta eles quando solicitado.
+  termsOfService: https://teste-vough-api.herokuapp.com/api/orgs/termo-uso
+  contact:
+    name: Nathan Cezar Cardoso
+    url: https://www.linkedin.com/in/nathan-cezar-cardoso/
+    email: nathancezar@gmail.com
+
+paths:
+  '/api/orgs/':
+    get:
+      summary: Mostra Organizações
+      description: Exibe organizações salvas no Banco
+      produces:
+        - aplication/json
+      operationId: retrieve
+      responses:
+        200:
+          description: Ok
+          schema:
+            type: object
+            properties:
+              login:
+                type: string
+              name:
+                type: string
+              score:
+                type: integer
+        404:
+          description: Organização não encontrada
+  '/api/orgs/<login>':
+    get:
+      summary: Busca uma organização no GitHub
+      description: Busca e salva os dados de uma organização na api do GitHub
+      consumes:
+        - string
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              login:
+                type: string
+              name:
+                type: string
+              score:
+                type: integer
+        404:
+          description: Organização não encontrada
+    delete:
+      summary: Deleta Organização do Banco
+      description: Deleta uma organização do Banco de Dados
+      consumes:
+        - string
+      responses:
+        200:
+          description: OK
+        404:
+          description: Organização não encontrada
+    
