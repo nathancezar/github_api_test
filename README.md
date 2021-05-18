@@ -1,4 +1,4 @@
-# API desenvolvida para Teste Técnico Desenvolvedor(a) Python Júnior
+# API desenvolvida para Teste da API do Github
 
 A API pode ser acessada em https://teste-vough-api.herokuapp.com/api/
 
